@@ -4,7 +4,7 @@ function createLabel($product)
 {
     $label = '^XA'; //nieuw label
     $label .= '^CF0,40'; //font 0 and the height of the characters to 40 dots.
-    $label .= '^FO20,35'; //X position is set to 5 dots, and the Y position is set to 15 dots.
+    $label .= '^FO20,35'; //X position is set to 20 dots, and the Y position is set to 35 dots.
     $label .= '^FB406,1,0,C,0'; // field (406 dots), the number of lines (1), justification (0 for left-justified), orientation (C for centered), and the rotation angle (0 degrees).
     $label .= '^FD'; //data
     $label .= $product["title"];
@@ -18,7 +18,7 @@ function createLabel($product)
     $label .= '^FO20,215';
     $label .= '^FB416,1,0,C,0';
     $label .= '^FD';
-    $label .= '100 gram';
+    $label .= '100 gram'; //todo variant variable
     $label .= '^FS'; //dataend
     $label .= '^XZ'; //label end
 
