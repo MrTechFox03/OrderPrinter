@@ -1,1 +1,4 @@
 ﻿node_modules
+.idea
+pdfs
+test.php

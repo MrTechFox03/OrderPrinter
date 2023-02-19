@@ -1,6 +1,6 @@
 <?php
 function fetchAnOrderWithId($id){
-    $url = 'https://api.webshopapp.com/nl/orders/' . $id . '.json';
+    $url = 'https://api.webshopapp.com/nl/orders.json?number='.$id;
     return getRequest($url);
 }
 

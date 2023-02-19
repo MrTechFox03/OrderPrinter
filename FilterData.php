@@ -1,7 +1,13 @@
 <?php
 function getListOfProductsOfOrderWithId($jsonOrderEncoded) {
     $jsonOrderDecoded = json_decode($jsonOrderEncoded, true);
-    $order = $jsonOrderDecoded["order"];
+
+    $orderTest = $jsonOrderDecoded["orders"];
+    if ($orderTest == null) {
+        var_dump("Geen order gevonden!");
+        return;
+    }
+    $order = $orderTest[0];
     $customerName = $order["firstname"] . " " . $order["middlename"] . " " . $order["lastname"];
     $urlOfProducts = $order["products"]["resource"]["link"];
 

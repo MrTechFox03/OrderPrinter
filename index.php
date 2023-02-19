@@ -78,7 +78,7 @@ Selected Device:
     <!-- todo make inputfields to adjust labels -->
     <label>
         Order ID:
-        <input type="number" name="orderId" value="235217584">
+        <input type="text" name="orderId" value="ORD00146">
     </label>
     <br>
     <label>
@@ -122,8 +122,8 @@ function retrieveJson($orderId)
 
 function printLabels($labelsJson, $width ,$height)
 {
-
     $allLabels = array();
+    if ($labelsJson != null){
     foreach ($labelsJson as $labelJson) {
         //todo implement variables instead of static
         $label = createLabel($labelJson);
@@ -134,5 +134,6 @@ function printLabels($labelsJson, $width ,$height)
     }
     //todo print all labels at ones
     return $allLabels;
+    }
 }
 ?>
