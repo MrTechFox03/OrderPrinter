@@ -1,4 +1,4 @@
-function createLabel(height, width, items) {
+function createLabel(height, width, items, image, imageX, imageY, imageWidth, imageHeight) {
     let canvas = createCanvas(width, height);
     let ctx = createCtxAndLabel(canvas);
 
@@ -8,17 +8,26 @@ function createLabel(height, width, items) {
 
         createText(canvas, item.text, item.fontSize, item.fontType, alignX, item.fontColor, item.y);
     }
-    // Get the label image data as a base64 string
+
+    addImage(canvas, image, imageX, imageY, imageWidth, imageHeight)
+
+    return returnLabel(canvas)
+}
+
+function addImage(canvas, image, imageX, imageY, imageWidth, imageHeight) {
+    let ctx = canvas.getContext('2d');
+    if (image != null) {
+        ctx.drawImage(base_image, imageX, imageY, imageWidth, imageHeight);
+    }
+}
+
+function returnLabel(canvas) {
     const labelImgData = canvas.toDataURL();
 
-
-    // Create an image element with the label image
     const labelImg = document.createElement('img');
     labelImg.src = labelImgData;
-    //labelImg.alt = `${title} - ${variant}`;
 
-    // Add the label image to the DOM
-    document.body.appendChild(labelImg);
+    return labelImg;
 }
 
 

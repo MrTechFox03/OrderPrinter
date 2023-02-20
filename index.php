@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<body>
+<body style="background: lightgrey">
 
 <script type="text/javascript" src="lib/BrowserPrint-3.0.216.min.js"></script>
 <script>
@@ -43,13 +43,12 @@
         })
     }
 
-    function writeToSelectedPrinter(dataToWrite) {
-        selected_device.send(dataToWrite, undefined, errorCallback);
+    function sendImage(imageUrl) {
+        selected_device.convertAndSendFile(imageUrl, undefined, errorCallback)
     }
 
-    function printAllLabels(labels){
-        console.log("hier")
-        for (let label in labels){
+    function printAllLabels(labels) {
+        for (let label in labels) {
             console.log(label);
         }
     }
@@ -78,22 +77,24 @@ Selected Device:
     <!-- todo make inputfields to adjust labels -->
     <label>
         Order ID:
-        <input type="text" name="orderId" value="ORD00146">
+        <input type="text" name="orderId" value="ORD03703">
     </label>
     <br>
     <label>
         Height:
-        <input type="number" name="height" value="51"
+        <input type="number" name="height" value="25"
     </label>
     <br>
     <label>
         Width:
-        <input type="number" name="width" value="57"
+        <input type="number" name="width" value="54"
     </label>
     <br>
     <input type="submit" name="submit" value="Retreive Labels">
 </form>
 <br>
+<div id="preview">
+</div>
 </body>
 </html>
 <?php
@@ -106,12 +107,12 @@ require "CreateLabel.php";
 require 'LabelPreview.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
-        $orderId = $_POST['orderId'];
-        $width = $_POST['width'];
-        $height = $_POST['height'];
+    $orderId = $_POST['orderId'];
+    $width = $_POST['width'];
+    $height = $_POST['height'];
 
-        $labelsJson = retrieveJson($orderId);
-        $newLabelsZPL = printLabels($labelsJson, $width, $height);
+    $labelsJson = retrieveJson($orderId);
+    $newLabelsZPL = printLabels($labelsJson, $width, $height);
 }
 
 function retrieveJson($orderId)
@@ -120,20 +121,93 @@ function retrieveJson($orderId)
     return getListOfProductsOfOrderWithId($orderJson);
 }
 
-function printLabels($labelsJson, $width ,$height)
+function printLabels($labelsJson, $width, $height)
 {
+    ?>
+    <script>
+        const parent = document.getElementById("preview");
+    </script>
+    <?php
     $allLabels = array();
-    if ($labelsJson != null){
-    foreach ($labelsJson as $labelJson) {
-        //todo implement variables instead of static
-        $label = createLabel($labelJson);
-        ?>
-        <?php echo $labelJson["title"]; ?><br><input type="button" value="Print Label"  onclick="writeToSelectedPrinter('<?php echo $label; ?>')"> <br><?php
-        makePreview($label, $labelJson["title"], $width ,$height);
-        $allLabels[] = $label;
-    }
-    //todo print all labels at ones
-    return $allLabels;
+    if ($labelsJson != null) {
+        foreach ($labelsJson as $labelJson) {
+            $title = array(
+                'text' => $labelJson["title"],
+                'align' => 'L',
+                'fontType' => 'Arial Bold',
+                'fontColor' => 'Black',
+                'fontSize' => 40,
+                'x' => 5,
+                'y' => 50
+            );
+            $description = array(
+                'text' => $labelJson["description"],
+                'align' => 'L',
+                'fontType' => 'Arial',
+                'fontColor' => 'Black',
+                'fontSize' => 20,
+                'x' => 5,
+                'y' => 150
+            );
+            $variant = array(
+                'text' => $labelJson["amount"],
+                'align' => 'C',
+                'fontType' => 'Arial',
+                'fontColor' => 'Black',
+                'fontSize' => 20,
+                'x' => 0,
+                'y' => 400
+            );
+            $label = json_encode(array($title, $description, $variant));
+            $image = array(
+                'src' => 'logo-dark.png',
+                'x' => 50,
+                'y' => 50,
+                'width' => 50,
+                'height' => 50
+            );
+            ?>
+            <script type="text/javascript" src="LabelPreviewer.js"></script>
+            <script>
+                parent.appendChild(document.createElement("p").appendChild(document.createTextNode('<?php echo $labelJson["title"] ?>')));
+                parent.appendChild(document.createElement("br"));
+                base_image = new Image();
+                base_image.src = '<?php echo $image["src"] ?>';
+                base_image.onload = function () {
+                    let labelImg = createLabel(
+                        <?php echo $height ?>,
+                        <?php echo $width ?>,
+                        <?php echo $label ?>,
+                        base_image,
+                        <?php echo $image["x"] ?>,
+                        <?php echo $image["y"] ?>,
+                        <?php echo $image["width"] ?>,
+                        <?php echo $image["height"] ?>
+                    );
+                    parent.appendChild(labelImg);
+
+                    const sendJpgButtonSrc = document.createElement("input");
+                    sendJpgButtonSrc.type = "button";
+                    sendJpgButtonSrc.value = "Print label";
+                    sendJpgButtonSrc.onclick = function () {
+                        sendImage(labelImg.src);
+                    };
+
+                    // add the buttons to the HTML document
+                    parent.appendChild(document.createElement("br"));
+                    parent.appendChild(sendJpgButtonSrc);
+                    parent.appendChild(document.createElement("br"));
+                    parent.appendChild(document.createElement("br"));
+
+                }
+
+            </script>
+            <?php
+
+        }
+        //todo print all labels at ones
+        return $allLabels;
     }
 }
+
 ?>

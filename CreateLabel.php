@@ -1,6 +1,6 @@
 <?php
 
-function createLabel($product)
+function createTextLabel($product)
 {
     $label = '^XA'; //nieuw label
     $label .= '^CF0,40'; //font 0 and the height of the characters to 40 dots.
