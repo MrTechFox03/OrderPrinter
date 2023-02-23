@@ -25,7 +25,12 @@ function getListOfProductsOfOrderWithId($jsonOrderEncoded) {
         $filteredObject["customer"] = $customerName;
         $filteredObject["title"] = $product -> fulltitle;
         $filteredObject["description"] =  $product->description;
-        $filteredObject["amount"] = $productOrder["variantTitle"];
+        $filteredObject["variant"] = $productOrder["variantTitle"];
+        //todo bespreken welke quantity het moet worden:
+        //"quantityOrdered": 1
+        //"quantityInvoiced": 1
+        //"quantityShipped": 1
+        $filteredObject["amount"] = $productOrder["quantityInvoiced"];
         $listOfProductsInformation[] = $filteredObject;
     }
     return $listOfProductsInformation;
