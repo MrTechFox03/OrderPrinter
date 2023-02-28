@@ -1,5 +1,6 @@
 function createLabel(width, height, items, image, imageX,imageY, imageWidth, imageHeight) {
     let canvas = createCanvas(width, height);
+    let ctx = createCtxAndLabel(canvas)
 
     for (let i in items) {
         if (i === 'image')
@@ -13,6 +14,15 @@ function createLabel(width, height, items, image, imageX,imageY, imageWidth, ima
     addImage(canvas, image, imageX, imageY, imageWidth, imageHeight)
 
     return returnLabel(canvas)
+}
+
+function createCtxAndLabel(canvas) {
+    // Get the canvas context
+    let ctx = canvas.getContext('2d');
+    // Set background color
+    ctx.fillStyle = '#FFFFFF'; // white
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return ctx;
 }
 
 function addImage(canvas, image, imageX, imageY, imageWidth, imageHeight) {
