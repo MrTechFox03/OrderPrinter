@@ -19,7 +19,8 @@ function getListOfProductsOfOrderWithId($jsonOrderEncoded) {
         $linkToProduct = $productOrder["product"]["resource"]["link"];
         $product = json_decode(getRequest($linkToProduct))->product;
 
-        $product->description = str_replace(array("\r", "\n"), '', $product->description);
+        //todo ' toestaan
+        $product->description = str_replace(array("\r", "\n","'"), '', $product->description);
 
         $filteredObject["orderId"] = $order["id"];
         $filteredObject["customer"] = $customerName;

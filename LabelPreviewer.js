@@ -1,8 +1,9 @@
-function createLabel(height, width, items, image, imageX, imageY, imageWidth, imageHeight) {
+function createLabel(width, height, items, image, imageX,imageY, imageWidth, imageHeight) {
     let canvas = createCanvas(width, height);
-    let ctx = createCtxAndLabel(canvas);
 
     for (let i in items) {
+        if (i === 'image')
+            continue;
         let item = items[i];
         let alignX = determineX(canvas, item.align, item.x);
 
@@ -32,21 +33,13 @@ function returnLabel(canvas) {
 
 
 function createCanvas(width, height) {
-// Create a canvas element
     let canvas = document.createElement('canvas');
-    // Set the canvas dimensions to the height and width variables
+    let ctx = canvas.getContext('2d');
+    ctx.fillStyle = "white"; // Set background color to white
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     canvas.width = width * 8;
     canvas.height = height * 8;
     return canvas;
-}
-
-function createCtxAndLabel(canvas) {
-    // Get the canvas context
-    let ctx = canvas.getContext('2d');
-    // Set background color
-    ctx.fillStyle = '#FFFFFF'; // white
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    return ctx;
 }
 
 function determineX(canvas, align, offset) {

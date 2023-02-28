@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="nl">
 <body>
 
 <script type="text/javascript" src="lib/BrowserPrint-3.0.216.min.js"></script>
@@ -7,6 +7,12 @@
     window.onload = setup;
     var selected_device;
     var devices = [];
+
+    function removeAllChildNodes(parent) {
+        while (parent.firstChild) {
+            parent.removeChild(parent.firstChild);
+        }
+    }
 
     function setup() {
         //Get the default device from the application as a first step. Discovery takes longer to complete.
@@ -79,18 +85,40 @@
 
 </script>
 <span style="padding-right:50px; font-size:200%">Simple Label Printer</span><br/>
-<span style="font-size:75%">Selecteer de juiste printer. Voer hierna de gewenste ordernummer in.
+<span style="font-size:75%">Selecteer de juiste printer. Voer hierna het gewenste ordernummer in.
     Hierna klik op 'OK' om een overzicht te krijgen van de labels. Het overzicht wat naar voren komt heeft verschillende functies.
     'Print alle labels' knop print alle labels uit op jouw printer. Door op een label voorbeeld te drukken, kun je een enkele label afdrukken.
     Niet tevreden met de text op de label? Verander de text in het tabel en druk op de verversknop naast de 'Print alle labels' knop.</span><br>
-Selected Device:
-<select id="selected_device" onchange=onDeviceSelected(this);></select>
+<label for="selected_device">Geselecteerde printer:</label>
+<select id="selected_device" onchange=onDeviceSelected(this);></select><br>
+
 
 <form action="index.php" method="post">
-    <!-- todo make inputfields to adjust labels -->
+    <label>Geselecteerde instellingen:
+        <select name="settings">
+            <?php
+            include "lib/dir.php";
+            $files = getListOfFiles();
+            foreach ($files as $file) {
+                ?>
+                <option><?php echo $file ?></option>
+                <?php
+            }
+            ?>
+        </select>
+        <button style="padding: 1px 10px;" id="goToSettings">⚙</button>
+        <script>
+            goToSettings = document.getElementById("goToSettings");
+            goToSettings.addEventListener("click", function (event) {
+                event.preventDefault();
+                window.location.href = 'settings/index.php';
+            });
+        </script>
+    </label><br>
     <label>
-        Order ID:
-        <input type="text" name="orderId" value="ORD03703"> <input class="button" type="submit" name="submit" value="OK">
+        Ordernummer:
+        <input type="text" name="orderId" value="ORD03834">
+        <input class="button" type="submit" name="submit" value="OK">
     </label>
     <br>
     <label>
@@ -106,8 +134,6 @@ Selected Device:
 </form>
 <br>
 <table id=previewTable></table>
-<div id="preview">
-</div>
 </body>
 </html>
 <?php
@@ -120,16 +146,26 @@ require "CreateLabel.php";
 require 'LabelPreview.php';
 
 $labelsJson = "";
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $orderId = $_POST['orderId'];
-    $width = $_POST['width'];
-    $height = $_POST['height'];
+    $settings = $_POST['settings'];
+    include "SettingsFiles/" . $settings . ".php";
+    $width = getLabelWidth();
+    $height = getLabelHeight();
 
-    $labelsJson = retrieveJson($orderId);
+    if (isset($_POST['submit'])) {
+        $labelsJson = retrieveJson($orderId);
+        $labelsJson = deleteData($labelsJson);
+    }
+
+    if (isset($_POST['refresh'])) {
+        $labelsJson = json_decode($_POST['refresh'], true);
+    }
+
     //todo make it possible to add static text box with labelsJson
-    $labelsJson = deleteData($labelsJson);
 
-    makeTable($labelsJson);
+
+    makeTable($labelsJson, $height);
 
     $newLabelsZPL = printLabels($labelsJson, $width, $height);
 }
@@ -139,7 +175,8 @@ function deleteData($labelsJson)
     $newLabelsJson = array();
     foreach ($labelsJson as $item) {
         $label = array();
-        $label['aantal'] = $item['amount'];
+        //todo make array of keys variable and visable to make settings about it
+        $label['amount'] = $item['amount'];
         $label['title'] = $item['title'];
         $label['description'] = $item['description'];
         $label['variant'] = $item['variant'];
@@ -148,66 +185,70 @@ function deleteData($labelsJson)
     return $newLabelsJson;
 }
 
-function makeTable($labelsJson)
+function makeTable($labelsJson, $height)
 {
-    if ($labelsJson != null) {
-        ?>
-        <script>
-            let labels = JSON.parse('<?php echo json_encode($labelsJson); ?>');
-            const table = document.getElementById("previewTable");
-
-            //Create all keys as header
-            const headerRow = table.insertRow();
-            for (let key in labels[0]) {
-                const headerCell = headerRow.insertCell();
-                headerCell.classList.add("header");
-                headerCell.textContent = key.charAt(0).toUpperCase() + key.slice(1);
-            }
-            const labelPreviewHeaderCell = headerRow.insertCell();
-            labelPreviewHeaderCell.classList.add("header");
-
-            //todo make every cell can remake the label preview
-            for (let i in labels) {
-                const dataRow = table.insertRow();
-                for (let j in labels[i]) {
-                    const dataCell = dataRow.insertCell();
-                    dataCell.style.textAlign = 'center';
-
-                    let elem;
-
-                    if (j.toLocaleLowerCase() === "aantal" || j.toLocaleLowerCase() === "amount"){
-                        elem = document.createElement('p');
-                        elem.appendChild(document.createTextNode(labels[i][j]))
-                    } else {
-                        elem = document.createElement('textarea');
-
-                        elem.style.width = '95%';
-                        elem.value = labels[i][j];
-                        elem.style.height = '500px';
-                        elem.style.overflow = "hidden";
-
-                        elem.style.resize = 'none';
-                    }
-
-
-                    elem.style.padding = '5px';
-                    elem.style.fontSize = '1.3em';
-                    elem.addEventListener('input', () => {
-                        labels[i][j] = elem.value;
-                    });
-                    dataCell.appendChild(elem);
-                }
-                const labelPreview = dataRow.insertCell();
-                labelPreview.id = "labelPreview" + i;
-                labelPreview.classList.add("labelPreview")
-
-                const printButton = dataRow.insertCell();
-                printButton.id = "printButton" + i;
-
-            }
-        </script>
-        <?php
+    if ($labelsJson == null) {
+        return;
     }
+    ?>
+    <script>
+        let labels = JSON.parse('<?php echo json_encode($labelsJson); ?>');
+        const refreshLabelPreviews = document.createElement("button");
+        refreshLabelPreviews.value = JSON.stringify(labels);
+
+        const table = document.getElementById("previewTable");
+
+        //Create all keys as header
+        const headerRow = table.insertRow();
+        for (let key in labels[0]) {
+            const headerCell = headerRow.insertCell();
+            headerCell.classList.add("header");
+            headerCell.textContent = key.charAt(0).toUpperCase() + key.slice(1);
+        }
+        const labelPreviewHeaderCell = headerRow.insertCell();
+        labelPreviewHeaderCell.classList.add("header");
+
+        //todo make every cell can remake the label preview
+        for (let i in labels) {
+            const dataRow = table.insertRow();
+            for (let j in labels[i]) {
+                const dataCell = dataRow.insertCell();
+                dataCell.style.textAlign = 'center';
+
+                let elem;
+
+                if (j.toLocaleLowerCase() === "aantal" || j.toLocaleLowerCase() === "amount") {
+                    elem = document.createElement('p');
+                    elem.appendChild(document.createTextNode(labels[i][j]))
+                } else {
+                    elem = document.createElement('textarea');
+
+                    elem.style.width = '95%';
+                    elem.value = labels[i][j];
+                    elem.style.height = '<?php echo ($height * 8) . "px"?>'
+                    elem.style.overflow = "hidden";
+                    elem.style.resize = 'none';
+                    elem.addEventListener("change", function () {
+                        labels[i][j] = elem.value;
+                        refreshLabelPreviews.value = JSON.stringify(labels);
+                    });
+                }
+
+
+                elem.style.padding = '5px';
+                elem.style.fontSize = '1.3em';
+                dataCell.appendChild(elem);
+            }
+            const labelPreview = dataRow.insertCell();
+            labelPreview.id = "labelPreview" + i;
+            labelPreview.classList.add("labelPreview")
+
+            const printButton = dataRow.insertCell();
+            printButton.id = "printButton" + i;
+
+        }
+    </script>
+    <?php
 
 }
 
@@ -221,65 +262,38 @@ function printLabels($labelsJson, $width, $height)
 {
     ?>
     <script>
-        //make a button to print all
-        const parent = document.getElementById("preview");
         let allLabelPreviews = [];
     </script>
     <?php
     $allLabels = array();
     if ($labelsJson != null) {
         foreach ($labelsJson as $index => $labelJson) {
-            $title = array(
-                'text' => $labelJson["title"],
-                'align' => 'L',
-                'fontType' => 'Arial Bold',
-                'fontColor' => 'Black',
-                'fontSize' => 40,
-                'x' => 5,
-                'y' => 50
-            );
-            $description = array(
-                'text' => $labelJson["description"],
-                'align' => 'C',
-                'fontType' => 'Arial',
-                'fontColor' => 'Black',
-                'fontSize' => 20,
-                'x' => 5,
-                'y' => 150
-            );
-            $variant = array(
-                'text' => $labelJson["variant"],
-                'align' => 'C',
-                'fontType' => 'Arial',
-                'fontColor' => 'Black',
-                'fontSize' => 20,
-                'x' => 0,
-                'y' => 400
-            );
-            $label = json_encode(array($title, $description, $variant));
-            $image = array(
-                'src' => 'logo-dark.png',
-                'x' => 50,
-                'y' => 50,
-                'width' => 50,
-                'height' => 50
-            );
+            $textSettings = getTextSettings();
+            $label = array();
+            foreach ($textSettings as $j => $textSetting) {
+                $textSetting['text'] = $labelJson[$j];
+                $label[] = $textSetting;
+            }
+            $image = getImageSettings();
             ?>
             <script type="text/javascript" src="LabelPreviewer.js"></script>
             <script>
                 base_image = new Image();
-                base_image.src = '<?php echo $image["src"] ?>';
+                base_image.src = '<?php echo $image['src']?>';
+                imageSettings =<?php echo json_encode($image)?>;
+
                 base_image.onload = function () {
                     let labelImg = createLabel(
-                        <?php echo $height ?>,
-                        <?php echo $width ?>,
-                        <?php echo $label ?>,
-                        base_image,
-                        <?php echo $image["x"] ?>,
-                        <?php echo $image["y"] ?>,
-                        <?php echo $image["width"] ?>,
-                        <?php echo $image["height"] ?>
-                    );
+                            <?php echo $width ?>,
+                            <?php echo $height ?>,
+                            <?php echo json_encode($label) ?>,
+                            base_image,
+                            imageSettings.x,
+                            imageSettings.y,
+                            imageSettings.width,
+                            imageSettings.height
+                        )
+                    ;
                     labelImg.addEventListener('click', function (event) {
                         event.preventDefault();
                         sendImage(labelImg.src);
@@ -293,11 +307,7 @@ function printLabels($labelsJson, $width, $height)
                 }
 
             </script>
-            <?php
-
-        }
-
-        ?>
+        <?php } ?>
         <script>
             const sendImagesButton = document.createElement("button");
             sendImagesButton.textContent = "Print alle labels";
@@ -305,7 +315,14 @@ function printLabels($labelsJson, $width, $height)
                 event.preventDefault();
                 sendAllImages(allLabelPreviews);
             });
-            labelPreviewHeaderCell.appendChild(sendImagesButton)
+            labelPreviewHeaderCell.appendChild(sendImagesButton);
+
+
+            refreshLabelPreviews.classList.add("refresh");
+            refreshLabelPreviews.type = "refresh";
+            refreshLabelPreviews.name = "refresh";
+            refreshLabelPreviews.textContent = "↺";
+            labelPreviewHeaderCell.appendChild(refreshLabelPreviews);
         </script>
         <?php
         return $allLabels;
@@ -314,7 +331,7 @@ function printLabels($labelsJson, $width, $height)
 
 ?>
 <style>
-    body{
+    body {
         background-color: beige;
         font-family: Arial, serif;
         font-size: 20px;
@@ -327,6 +344,7 @@ function printLabels($labelsJson, $width, $height)
         cursor: pointer;
         margin: 5px;
     }
+
     button {
         border-radius: 15px;
         border: 1px solid grey;
@@ -335,6 +353,11 @@ function printLabels($labelsJson, $width, $height)
         margin: 5px;
         padding: 10px 25px;
 
+    }
+
+    button.refresh {
+        font-size: 25px;
+        padding: 4px 12px 8px 12px;
     }
 
     input, select {
