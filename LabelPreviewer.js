@@ -8,7 +8,7 @@ function createLabel(width, height, items, image, imageX,imageY, imageWidth, ima
         let item = items[i];
         let alignX = determineX(canvas, item.align, item.x);
 
-        createText(canvas, item.text, item.fontSize, item.fontType, alignX, item.fontColor, item.y);
+        createText(canvas, item.text, item.fontSize, item.fontType, alignX, item.fontColor, item.y, item.fontExtra);
     }
 
     addImage(canvas, image, imageX, imageY, imageWidth, imageHeight)
@@ -70,11 +70,13 @@ function determineX(canvas, align, offset) {
     }
 }
 
-function createText(canvas, text, fontSize, fontType, x, color, y) {
+function createText(canvas, text, fontSize, fontType, x, color, y, fontExtra) {
     let ctx = canvas.getContext('2d');
 
     ctx.fillStyle = color; // Set the text color to black
-    ctx.font = `${fontSize}px ${fontType}`;
+    ctx.font = fontExtra + ` ${fontSize}px ${fontType}`;
+
+
 
     const maxWidth = canvas.width - 20; // subtracting 20 to add padding
     let textWidth = ctx.measureText(text).width;
